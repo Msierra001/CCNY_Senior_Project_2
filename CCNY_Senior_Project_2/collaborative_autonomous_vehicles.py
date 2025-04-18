@@ -3,9 +3,9 @@ import random
 
 # Grid config
 ROWS, COLS = 100, 4  # Extend the road
-CELL_SIZE = 40
+CELL_SIZE = 40       # Like field of vision (FOV)
 WIDTH, HEIGHT = COLS * CELL_SIZE, 25 * CELL_SIZE  # View window height
-FPS = 2
+FPS = 2              # Frames pers second 
 
 # Faults and their colors
 FAULTS = {
