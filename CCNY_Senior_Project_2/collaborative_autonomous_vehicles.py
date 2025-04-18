@@ -1,23 +1,27 @@
 import pygame
 import random
-import math
 
-#pip install pygame
-
-# Grid size
-ROWS, COLS = 15, 4
+# Grid config
+ROWS, COLS = 100, 4  # Extend the road
 CELL_SIZE = 60
-WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
+WIDTH, HEIGHT = COLS * CELL_SIZE, 10 * CELL_SIZE  # View window height
 FPS = 1
 
-# Fault types and colors
-FAULTS = {'pothole': (139, 69, 19), 'ice': (173, 216, 230), 'rain': (0, 191, 255)}
+# Faults and their colors
+FAULTS = {
+    'pothole': (139, 69, 19),
+    'ice': (173, 216, 230),
+    'rain': (0, 191, 255)
+}
 
 # Initialize pygame
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Collaborative Autonomous Vehicles")
+pygame.display.set_caption("Collaborative Autonomous Vehicles (Ego Follow)")
 clock = pygame.time.Clock()
+
+# Camera offset (pixels scrolled)
+camera_offset = 0
 
 class Vehicle:
     def __init__(self, row, col, vid):
@@ -33,9 +37,11 @@ class Vehicle:
         self.row = max(0, self.row - 1)
 
     def draw(self, ego=False):
-        x, y = self.col * CELL_SIZE, self.row * CELL_SIZE
-        color = (255, 0, 0) if ego else (0, 255, 0)
-        pygame.draw.rect(screen, color, (x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10))
+        x = self.col * CELL_SIZE
+        y = self.row * CELL_SIZE - camera_offset
+        if 0 <= y < HEIGHT:
+            color = (255, 0, 0) if ego else (0, 255, 0)
+            pygame.draw.rect(screen, color, (x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10))
 
 class Environment:
     def __init__(self):
@@ -52,8 +58,9 @@ class Environment:
 
     def inject_faults(self):
         self.faults = [[None for _ in range(COLS)] for _ in range(ROWS)]
-        for _ in range(3):
-            r, c = random.randint(0, ROWS - 2), random.randint(0, COLS - 1)
+        for _ in range(20):
+            r = random.randint(0, ROWS - 2)
+            c = random.randint(0, COLS - 1)
             self.faults[r][c] = random.choice(list(FAULTS.keys()))
 
     def evaluate_ego(self):
@@ -76,24 +83,31 @@ class Environment:
 
     def draw(self, ego_vehicle):
         screen.fill((50, 50, 50))
-        # Draw grid and faults
+
         for r in range(ROWS):
             for c in range(COLS):
-                x, y = c * CELL_SIZE, r * CELL_SIZE
+                x = c * CELL_SIZE
+                y = r * CELL_SIZE - camera_offset
+                if y + CELL_SIZE < 0 or y > HEIGHT:
+                    continue
                 pygame.draw.rect(screen, (100, 100, 100), (x, y, CELL_SIZE, CELL_SIZE), 1)
                 if self.faults[r][c]:
-                    pygame.draw.rect(screen, FAULTS[self.faults[r][c]], (x+10, y+10, CELL_SIZE-20, CELL_SIZE-20))
+                    pygame.draw.rect(screen, FAULTS[self.faults[r][c]],
+                                     (x + 10, y + 10, CELL_SIZE - 20, CELL_SIZE - 20))
 
-        # Draw vehicles
         for v in self.vehicles:
             v.draw(ego=(v == ego_vehicle))
+
         pygame.display.flip()
 
 def main():
+    global camera_offset
     env = Environment()
     running = True
+
     while running:
         clock.tick(FPS)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -101,6 +115,10 @@ def main():
         env.inject_faults()
         ego_vehicle = env.evaluate_ego()
         env.update()
+
+        # Camera follows ego vehicle
+        camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
+
         env.draw(ego_vehicle)
 
     pygame.quit()
