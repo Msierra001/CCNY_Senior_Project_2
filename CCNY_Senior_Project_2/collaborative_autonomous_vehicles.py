@@ -3,9 +3,9 @@ import random
 
 # Grid config
 ROWS, COLS = 100, 4  # Extend the road
-CELL_SIZE = 60
-WIDTH, HEIGHT = COLS * CELL_SIZE, 10 * CELL_SIZE  # View window height
-FPS = 1
+CELL_SIZE = 40
+WIDTH, HEIGHT = COLS * CELL_SIZE, 25 * CELL_SIZE  # View window height
+FPS = 5
 
 # Faults and their colors
 FAULTS = {
