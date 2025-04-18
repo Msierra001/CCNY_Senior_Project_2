@@ -5,7 +5,7 @@ import random
 ROWS, COLS = 100, 4  # Extend the road
 CELL_SIZE = 40
 WIDTH, HEIGHT = COLS * CELL_SIZE, 25 * CELL_SIZE  # View window height
-FPS = 5
+FPS = 2
 
 # Faults and their colors
 FAULTS = {
