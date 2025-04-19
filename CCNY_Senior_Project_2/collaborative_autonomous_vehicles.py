@@ -1,5 +1,6 @@
 import pygame
 import random
+import copy
 
 # ----------------------------
 # Load config
@@ -32,7 +33,7 @@ FAULTS = {
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Autonomous Cars (Grid, Dark Road)")
+pygame.display.set_caption("Autonomous Cars (Step/Back/Pause)")
 clock = pygame.time.Clock()
 camera_offset = 0
 
@@ -97,7 +98,6 @@ class Environment:
         self.spawn_vehicles()
 
     def spawn_vehicles(self):
-        # One vehicle per column at the bottom row
         for col in range(COLS):
             v = Vehicle(ROWS - 1, col, col)
             self.vehicles.append(v)
@@ -129,8 +129,7 @@ class Environment:
             v.update(self)
 
     def draw(self, ego_vehicle):
-        # Draw dark road
-        screen.fill((30, 30, 30))  # Dark background
+        screen.fill((30, 30, 30))  # Dark road
 
         # Draw dashed vertical lane lines
         for c in range(1, COLS):
@@ -156,12 +155,15 @@ class Environment:
         pygame.display.flip()
 
 # ----------------------------
-# Main Loop
+# Main Loop (Pause, Step, Back)
 # ----------------------------
 def main():
     global camera_offset
     env = Environment()
+    history = []
     running = True
+    paused = False
+    step = False
 
     camera_offset = 0
 
@@ -172,12 +174,23 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        env.inject_faults()
-        ego_vehicle = env.evaluate_ego()
-        env.update()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    paused = not paused
+                elif event.key == pygame.K_RIGHT and paused:
+                    step = True
+                elif event.key == pygame.K_LEFT and paused and history:
+                    env = history.pop()
 
-        camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
-        env.draw(ego_vehicle)
+        if not paused or step:
+            history.append(copy.deepcopy(env))
+            env.inject_faults()
+            ego_vehicle = env.evaluate_ego()
+            env.update()
+            camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
+            step = False
+
+        env.draw(env.evaluate_ego())
 
     pygame.quit()
 
