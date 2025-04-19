@@ -2,4 +2,4 @@ ROWS = 100
 COLS = 4
 CELL_SIZE = 40
 FPS = 2
-VIEW_ROWS = 15        
+VIEW_ROWS = 15

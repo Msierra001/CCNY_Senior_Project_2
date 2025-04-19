@@ -33,7 +33,7 @@ FAULTS = {
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Autonomous Cars (Step/Back/Pause)")
+pygame.display.set_caption("Autonomous Cars (Pause + Step)")
 clock = pygame.time.Clock()
 camera_offset = 0
 
@@ -129,9 +129,10 @@ class Environment:
             v.update(self)
 
     def draw(self, ego_vehicle):
-        screen.fill((30, 30, 30))  # Dark road
+        # Dark road background
+        screen.fill((30, 30, 30))
 
-        # Draw dashed vertical lane lines
+        # Vertical dashed lane lines
         for c in range(1, COLS):
             x = c * CELL_SIZE
             for y in range(0, HEIGHT, 40):
@@ -155,7 +156,7 @@ class Environment:
         pygame.display.flip()
 
 # ----------------------------
-# Main Loop (Pause, Step, Back)
+# Main Loop (With Pause/Step)
 # ----------------------------
 def main():
     global camera_offset
@@ -182,9 +183,12 @@ def main():
                 elif event.key == pygame.K_LEFT and paused and history:
                     env = history.pop()
 
+        # 👉 Only inject faults if simulation is running (not stepping or paused)
+        if not paused and not step:
+            env.inject_faults()
+
         if not paused or step:
             history.append(copy.deepcopy(env))
-            env.inject_faults()
             ego_vehicle = env.evaluate_ego()
             env.update()
             camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
@@ -193,6 +197,8 @@ def main():
         env.draw(env.evaluate_ego())
 
     pygame.quit()
+
+
 
 if __name__ == "__main__":
     main()
