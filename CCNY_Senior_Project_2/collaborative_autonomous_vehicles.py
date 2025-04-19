@@ -1,3 +1,4 @@
+#Imports 
 import pygame
 import random
 import copy
@@ -183,7 +184,7 @@ def main():
                 elif event.key == pygame.K_LEFT and paused and history:
                     env = history.pop()
 
-        # 👉 Only inject faults if simulation is running (not stepping or paused)
+        # Only inject faults if simulation is running (not stepping or paused)
         if not paused and not step:
             env.inject_faults()
 
