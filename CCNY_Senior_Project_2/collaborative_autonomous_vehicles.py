@@ -1,28 +1,44 @@
 import pygame
 import random
 
-# Grid config
-ROWS, COLS = 100, 4  # Extend the road
-CELL_SIZE = 40       # Like field of vision (FOV)
-WIDTH, HEIGHT = COLS * CELL_SIZE, 25 * CELL_SIZE  # View window height
-FPS = 2              # Frames pers second 
+# ----------------------------
+# Load config from config.txt
+# ----------------------------
+def load_config(path="config.txt"):
+    config = {}
+    with open(path, 'r') as file:
+        for line in file:
+            if '=' in line:
+                key, value = line.strip().split('=')
+                config[key.strip()] = int(value.strip())
+    return config
 
-# Faults and their colors
+# Load settings
+config = load_config()
+
+ROWS = config["ROWS"]
+COLS = config["COLS"]
+CELL_SIZE = config["CELL_SIZE"]
+FPS = config["FPS"]
+WIDTH, HEIGHT = COLS * CELL_SIZE, config["VIEW_ROWS"] * CELL_SIZE
+
+# Fault types and colors
 FAULTS = {
     'pothole': (139, 69, 19),
     'ice': (173, 216, 230),
     'rain': (0, 191, 255)
 }
 
-# Initialize pygame
+# Initialize Pygame
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Collaborative Autonomous Vehicles (Ego Follow)")
+pygame.display.set_caption("Collaborative Autonomous Vehicles (Configurable)")
 clock = pygame.time.Clock()
-
-# Camera offset (pixels scrolled)
 camera_offset = 0
 
+# ----------------------------
+# Vehicle class
+# ----------------------------
 class Vehicle:
     def __init__(self, row, col, vid):
         self.row = row
@@ -43,6 +59,9 @@ class Vehicle:
             color = (255, 0, 0) if ego else (0, 255, 0)
             pygame.draw.rect(screen, color, (x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10))
 
+# ----------------------------
+# Environment class
+# ----------------------------
 class Environment:
     def __init__(self):
         self.vehicles = []
@@ -100,6 +119,9 @@ class Environment:
 
         pygame.display.flip()
 
+# ----------------------------
+# Main simulation loop
+# ----------------------------
 def main():
     global camera_offset
     env = Environment()
