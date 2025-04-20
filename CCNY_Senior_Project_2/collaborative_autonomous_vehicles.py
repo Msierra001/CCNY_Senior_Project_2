@@ -1,4 +1,4 @@
-#Imports 
+#Imports
 import pygame
 import random
 import copy
@@ -34,7 +34,7 @@ FAULTS = {
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Autonomous Cars (Pause + Step)")
+pygame.display.set_caption("Autonomous Cars (Persistent Faults Fixed)")
 clock = pygame.time.Clock()
 camera_offset = 0
 
@@ -104,12 +104,15 @@ class Environment:
             self.vehicles.append(v)
             self.grid[v.row][v.col] = v
 
-    def inject_faults(self):
-        self.faults = [[None for _ in range(COLS)] for _ in range(ROWS)]
-        for _ in range(20):
-            r = random.randint(0, ROWS - 2)
-            c = random.randint(0, COLS - 1)
-            self.faults[r][c] = random.choice(list(FAULTS.keys()))
+    def generate_faults_ahead(self):
+        for v in self.vehicles:
+            num_faults = random.randint(1, 3)
+            for _ in range(num_faults):
+                fault_row = v.row - random.randint(2, 4)
+                fault_col = random.randint(0, COLS - 1)
+                if 0 <= fault_row < ROWS:
+                    if self.faults[fault_row][fault_col] is None:
+                        self.faults[fault_row][fault_col] = random.choice(list(FAULTS.keys()))
 
     def evaluate_ego(self):
         scores = []
@@ -130,8 +133,7 @@ class Environment:
             v.update(self)
 
     def draw(self, ego_vehicle):
-        # Dark road background
-        screen.fill((30, 30, 30))
+        screen.fill((30, 30, 30))  # Dark road
 
         # Vertical dashed lane lines
         for c in range(1, COLS):
@@ -139,7 +141,7 @@ class Environment:
             for y in range(0, HEIGHT, 40):
                 pygame.draw.line(screen, (150, 150, 150), (x, y), (x, y + 20), 2)
 
-        # Draw faults
+        # Draw persistent faults
         for r in range(ROWS):
             for c in range(COLS):
                 y = r * CELL_SIZE - camera_offset
@@ -156,8 +158,9 @@ class Environment:
 
         pygame.display.flip()
 
+
 # ----------------------------
-# Main Loop (With Pause/Step)
+# Main Loop (Pause, Step, Back)
 # ----------------------------
 def main():
     global camera_offset
@@ -180,26 +183,28 @@ def main():
                 if event.key == pygame.K_SPACE:
                     paused = not paused
                 elif event.key == pygame.K_RIGHT and paused:
-                    step = True
+                    snapshot = copy.deepcopy(env)
+                    snapshot.faults = env.faults  # Keep same persistent faults
+                    history.append(snapshot)
+                    env.generate_faults_ahead()
+                    ego_vehicle = env.evaluate_ego()
+                    env.update()
+                    camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
                 elif event.key == pygame.K_LEFT and paused and history:
                     env = history.pop()
 
-        # Only inject faults if simulation is running (not stepping or paused)
-        if not paused and not step:
-            env.inject_faults()
-
-        if not paused or step:
-            history.append(copy.deepcopy(env))
+        if not paused:
+            snapshot = copy.deepcopy(env)
+            snapshot.faults = env.faults
+            history.append(snapshot)
+            env.generate_faults_ahead()
             ego_vehicle = env.evaluate_ego()
             env.update()
             camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
-            step = False
 
         env.draw(env.evaluate_ego())
 
     pygame.quit()
-
-
 
 if __name__ == "__main__":
     main()
