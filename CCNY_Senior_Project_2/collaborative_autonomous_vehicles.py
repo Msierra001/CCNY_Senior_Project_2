@@ -34,9 +34,20 @@ FAULTS = {
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Autonomous Cars (Persistent Faults Fixed)")
+pygame.display.set_caption("Autonomous Cars (With PNGs)")
 clock = pygame.time.Clock()
 camera_offset = 0
+
+# ----------------------------
+# Load Car Images
+# ----------------------------
+car_img = pygame.image.load("pngs/car.png").convert_alpha()
+car_img = pygame.transform.scale(car_img, (CELL_SIZE - 10, CELL_SIZE - 10))
+car_img = pygame.transform.rotate(car_img, +270)
+
+ego_car_img = pygame.image.load("pngs/car_ego.png").convert_alpha()
+ego_car_img = pygame.transform.scale(ego_car_img, (CELL_SIZE - 10, CELL_SIZE - 10))
+ego_car_img = pygame.transform.rotate(ego_car_img, +270)
 
 # ----------------------------
 # Vehicle Class
@@ -85,8 +96,10 @@ class Vehicle:
         x = self.col * CELL_SIZE
         y = self.row * CELL_SIZE - camera_offset
         if 0 <= y < HEIGHT:
-            color = (255, 0, 0) if ego else (0, 255, 0)
-            pygame.draw.rect(screen, color, (x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10))
+            if ego:
+                screen.blit(ego_car_img, (x + 5, y + 5))
+            else:
+                screen.blit(car_img, (x + 5, y + 5))
 
 # ----------------------------
 # Environment Class
@@ -158,9 +171,8 @@ class Environment:
 
         pygame.display.flip()
 
-
 # ----------------------------
-# Main Loop (Pause, Step, Back)
+# Main Loop
 # ----------------------------
 def main():
     global camera_offset
@@ -183,20 +195,27 @@ def main():
                 if event.key == pygame.K_SPACE:
                     paused = not paused
                 elif event.key == pygame.K_RIGHT and paused:
-                    snapshot = copy.deepcopy(env)
-                    snapshot.faults = env.faults  # Keep same persistent faults
+                    snapshot = Environment()
+                    snapshot.vehicles = copy.deepcopy(env.vehicles)
+                    snapshot.grid = copy.deepcopy(env.grid)
+                    snapshot.faults = env.faults  # Keep persistent fault grid
                     history.append(snapshot)
+
                     env.generate_faults_ahead()
                     ego_vehicle = env.evaluate_ego()
                     env.update()
                     camera_offset = ego_vehicle.row * CELL_SIZE - HEIGHT // 2
+
                 elif event.key == pygame.K_LEFT and paused and history:
                     env = history.pop()
 
         if not paused:
-            snapshot = copy.deepcopy(env)
+            snapshot = Environment()
+            snapshot.vehicles = copy.deepcopy(env.vehicles)
+            snapshot.grid = copy.deepcopy(env.grid)
             snapshot.faults = env.faults
             history.append(snapshot)
+
             env.generate_faults_ahead()
             ego_vehicle = env.evaluate_ego()
             env.update()
