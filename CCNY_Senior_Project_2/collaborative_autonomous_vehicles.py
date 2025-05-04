@@ -2,6 +2,7 @@ import pygame
 import random
 import copy
 import math
+import time 
 
 # ----------------------------
 # Load config
@@ -43,7 +44,8 @@ def load_config(path="config.txt"):
             "EFFICIENCY_WEIGHT": 3.0,
             "COMFORT_WEIGHT": 2.0,
             "ANIMATION_STEPS": 10,
-            "NUM_CARS_SPAWN": 4
+            "NUM_CARS_SPAWN": 4,
+            "LANE_CHANGE_COOLDOWN": 10
         }
         with open(path, 'w') as file:
             for key, value in default_config.items():
@@ -76,7 +78,7 @@ FAULT_EFFECTS = {
 }
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH + 300, HEIGHT))
 pygame.display.set_caption("Autonomous Cars (Smooth Movement)")
 clock = pygame.time.Clock()
 camera_offset = 0
@@ -313,6 +315,7 @@ class Vehicle:
                 env.grid[self.row][self.col] = None
                 self.target_col = self.planned_lane_change
                 self.is_changing_lane = True
+                env.add_log_message(f"Vehicle {self.id} initiated lane change from lane {self.col} to {self.planned_lane_change}")
                 self.animation_progress = 0
                 env.grid[self.row][self.target_col] = self
             self.planned_lane_change = None
@@ -487,38 +490,6 @@ class Vehicle:
         
         return min(10.0, max(0.0, (acceleration_factor + yaw_factor) / 2.0))
     
-# ----------------------------
-# Environment Class
-# ----------------------------
-class Environment:
-    def __init__(self):
-        self.vehicles = []
-        self.grid = [[None for _ in range(COLS)] for _ in range(ROWS)]
-        self.faults = [[None for _ in range(COLS)] for _ in range(ROWS)]
-        self.is_raining = False  # Track if it's currently raining
-        self.rain_frames_left = 0  # Track how long rain will continue
-        self.spawn_vehicles()
-        self.updates_per_logic_update = ANIMATION_STEPS
-
-    def spawn_vehicles(self):
-        # Initial vehicle generation
-        # Start with empty lanes
-        initial_rows = []
-        for col in range(COLS):
-            # Randomly place vehicles in each lane
-            row = ROWS - 1 - random.randint(0, config["MAX_VEHICLE_DISTANCE"])
-            initial_rows.append(row)
-        
-        # Create vehicles
-        next_id = 0
-        for col, row in enumerate(initial_rows):
-            v = Vehicle(row, col, next_id)
-            next_id += 1
-            self.vehicles.append(v)
-            self.grid[v.row][v.col] = v
-            # Initialize visual position
-            v.visual_row = float(row)
-            v.visual_col = float(col)
 
 # ----------------------------
 # Environment Class
@@ -532,6 +503,14 @@ class Environment:
         self.rain_frames_left = 0
         self.spawn_vehicles()
         self.updates_per_logic_update = ANIMATION_STEPS
+        self.log_messages = []
+
+    def add_log_message(self, message):
+        timestamp = time.strftime("%H:%M:%S")
+        full_message = f"[{timestamp}] {message}"
+        self.log_messages.append(full_message)
+        # No trimming, so logs grow until the program ends
+
 
     def spawn_vehicles(self):
         initial_rows = []
@@ -561,6 +540,7 @@ class Environment:
             self.is_raining = True
             self.rain_frames_left = int(config["RAIN_DURATION"])
             print("It started raining!")
+            self.add_log_message("Rain started")
         
         # Count down rain duration
         if self.is_raining:
@@ -568,6 +548,7 @@ class Environment:
             if self.rain_frames_left <= 0:
                 self.is_raining = False
                 print("The rain stopped.")
+                self.add_log_message("Rain stopped")
         
         # Fault generation variables
         max_new_faults = 1  # At most one new fault per update
@@ -605,6 +586,7 @@ class Environment:
                 
                 # Create a pothole
                 self.faults[fault_row][v.col] = 'pothole'
+                self.add_log_message(f"Pothole created at ({fault_row}, {v.col})")
                 faults_created += 1
                 
                 # Skip to next vehicle
@@ -680,6 +662,7 @@ class Environment:
             if v.row < 0 or v.visual_row < -1:
                 if self.grid[v.row][v.col] == v:
                     self.grid[v.row][v.col] = None
+                self.add_log_message(f"Vehicle {v.id} exited the simulation")
                 self.vehicles.remove(v)
 
         
@@ -762,6 +745,15 @@ class Environment:
                                 (rain_x, rain_y), 
                                 (rain_x - 2, rain_y + rain_length), 
                                 1)
+        # Draw log messages on the right side
+        log_font = pygame.font.SysFont(None, 18)
+        log_x = WIDTH + 10
+        log_y = 10
+        for log in self.log_messages[-20:]:  # Show last 20 log entries
+            log_surface = log_font.render(log, True, (255, 255, 255))
+            screen.blit(log_surface, (log_x, log_y))
+            log_y += 20
+
         pygame.display.flip()
 
 # ----------------------------

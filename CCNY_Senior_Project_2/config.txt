@@ -5,6 +5,9 @@ CELL_SIZE = 40
 FPS = 60
 VIEW_ROWS = 25
 
+#Logging settings
+LOG_PANEL_WIDTH = 300
+
 # Fault probabilities (percentage chance of occurrence)
 POTHOLE_CHANCE = 5
 ICE_CHANCE = 3
