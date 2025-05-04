@@ -59,8 +59,10 @@ ROWS = config["ROWS"]
 COLS = config["COLS"]
 CELL_SIZE = config["CELL_SIZE"]
 FPS = config["FPS"]
-LEFT_MARGIN = 40 #Adding space for row numbers
-WIDTH, HEIGHT = COLS * CELL_SIZE, config["VIEW_ROWS"] * CELL_SIZE
+LEFT_MARGIN = 40 # Left margin for leftmost lane. Adding space for row numbers
+RIGHT_MARGIN = 375 # Right margin for rightmost lane. Adding space for the car
+WIDTH = LEFT_MARGIN + COLS * CELL_SIZE + RIGHT_MARGIN
+HEIGHT = config["VIEW_ROWS"] * CELL_SIZE
 ANIMATION_STEPS = config.get("ANIMATION_STEPS", 10)
 NUM_CARS_SPAWN = config.get("NUM_CARS_SPAWN", 4)
 
@@ -79,7 +81,7 @@ FAULT_EFFECTS = {
 }
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH + 375, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Autonomous Cars (Smooth Movement)")
 clock = pygame.time.Clock()
 camera_offset = 0
@@ -745,16 +747,7 @@ class Environment:
                                 (rain_x, rain_y), 
                                 (rain_x - 2, rain_y + rain_length), 
                                 1)
-        # Draw log messages on the right side
-        log_font = pygame.font.SysFont(None, 18)
-        log_x = WIDTH + 10
-        log_y = 10
-        for log in self.log_messages[-20:]:  # Show last 20 log entries
-            log_surface = log_font.render(log, True, (255, 255, 255))
-            screen.blit(log_surface, (log_x, log_y))
-            log_y += 20
-
-                # --- Draw Axis Labels ---
+        # --- Draw Axis Labels ---
         axis_font = pygame.font.SysFont(None, 16)
 
         # Draw Y-axis (row numbers)
@@ -762,13 +755,28 @@ class Environment:
             y = r * CELL_SIZE - camera_offset
             if 0 <= y < HEIGHT - 40:  # Avoid drawing over dashboard
                 label = axis_font.render(f"R{r}", True, (200, 200, 200))
-                screen.blit(label, (5, y + 2))
+                screen.blit(label, (5, y + 2))  # Offset left for visibility
 
         # Draw X-axis (column headers)
         for c in range(COLS):
             x = c * CELL_SIZE
             label = axis_font.render(f"C{c}", True, (200, 200, 200))
             screen.blit(label, (x + 10, HEIGHT - 35))
+
+        # --- Draw Log Panel ---
+        log_panel_x = LEFT_MARGIN + COLS * CELL_SIZE + 10  # Leave gap after last column
+        log_panel_y = 10
+        log_panel_width = 190  # Width inside the RIGHT_MARGIN
+
+        # Draw background for log panel
+        pygame.draw.rect(screen, (20, 20, 20), (LEFT_MARGIN + COLS * CELL_SIZE, 0, RIGHT_MARGIN, HEIGHT - 40))
+
+        # Draw log messages
+        log_font = pygame.font.SysFont(None, 18)
+        for log in self.log_messages[-20:]:  # Show last 20 entries
+            log_surface = log_font.render(log, True, (255, 255, 255))
+            screen.blit(log_surface, (log_panel_x + 10, log_panel_y))
+            log_panel_y += 20
 
         pygame.display.flip()
 
