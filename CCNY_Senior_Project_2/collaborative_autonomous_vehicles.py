@@ -59,6 +59,7 @@ ROWS = config["ROWS"]
 COLS = config["COLS"]
 CELL_SIZE = config["CELL_SIZE"]
 FPS = config["FPS"]
+LEFT_MARGIN = 40 #Adding space for row numbers
 WIDTH, HEIGHT = COLS * CELL_SIZE, config["VIEW_ROWS"] * CELL_SIZE
 ANIMATION_STEPS = config.get("ANIMATION_STEPS", 10)
 NUM_CARS_SPAWN = config.get("NUM_CARS_SPAWN", 4)
@@ -78,7 +79,7 @@ FAULT_EFFECTS = {
 }
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH + 300, HEIGHT))
+screen = pygame.display.set_mode((WIDTH + 375, HEIGHT))
 pygame.display.set_caption("Autonomous Cars (Smooth Movement)")
 clock = pygame.time.Clock()
 camera_offset = 0
@@ -381,7 +382,7 @@ class Vehicle:
 
     def draw(self, ego=False):
         # Calculate screen position based on visual coordinates
-        x = self.visual_col * CELL_SIZE
+        x = self.visual_col * CELL_SIZE + LEFT_MARGIN
         y = self.visual_row * CELL_SIZE - camera_offset
         
         if 0 <= y < HEIGHT:
@@ -679,10 +680,9 @@ class Environment:
         text_surface = font.render(weather_text, True, (200, 200, 200))
         screen.blit(text_surface, (10, HEIGHT - 25))
 
-        # Removed car count display here
 
         for c in range(1, COLS):
-            x = c * CELL_SIZE
+            x = c * CELL_SIZE + LEFT_MARGIN
             for y in range(0, HEIGHT - 40, 40):
                 pygame.draw.line(screen, (150, 150, 150), (x, y), (x, y + 20), 2)
         # Draw persistent faults
@@ -692,7 +692,7 @@ class Environment:
                 if y + CELL_SIZE < 0 or y > HEIGHT:
                     continue
                 if self.faults[r][c]:
-                    x = c * CELL_SIZE
+                    x = c * CELL_SIZE + LEFT_MARGIN
                     fault_type = self.faults[r][c]
                     
                     # Draw different fault visuals based on type
@@ -753,6 +753,22 @@ class Environment:
             log_surface = log_font.render(log, True, (255, 255, 255))
             screen.blit(log_surface, (log_x, log_y))
             log_y += 20
+
+                # --- Draw Axis Labels ---
+        axis_font = pygame.font.SysFont(None, 16)
+
+        # Draw Y-axis (row numbers)
+        for r in range(0, ROWS):
+            y = r * CELL_SIZE - camera_offset
+            if 0 <= y < HEIGHT - 40:  # Avoid drawing over dashboard
+                label = axis_font.render(f"R{r}", True, (200, 200, 200))
+                screen.blit(label, (5, y + 2))
+
+        # Draw X-axis (column headers)
+        for c in range(COLS):
+            x = c * CELL_SIZE
+            label = axis_font.render(f"C{c}", True, (200, 200, 200))
+            screen.blit(label, (x + 10, HEIGHT - 35))
 
         pygame.display.flip()
 
