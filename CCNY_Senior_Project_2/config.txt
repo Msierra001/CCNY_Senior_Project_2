@@ -1,5 +1,35 @@
+# Grid dimensions and display settings
 ROWS = 100
 COLS = 4
 CELL_SIZE = 40
-FPS = 2
-VIEW_ROWS = 15
+FPS = 60
+VIEW_ROWS = 25
+
+# Fault probabilities (percentage chance of occurrence)
+POTHOLE_CHANCE = 5
+ICE_CHANCE = 3
+RAIN_CHANCE = 8
+
+# Weather state settings
+# Chance of weather changing per frame (%)
+WEATHER_CHANGE_CHANCE = 2  
+# How many frames rain persists once it starts
+RAIN_DURATION = 20       
+
+# Vehicle spawn settings
+NUM_CARS_SPAWN = 4
+MIN_VEHICLE_DISTANCE = 8
+MAX_VEHICLE_DISTANCE = 15
+VEHICLE_SPAWN_CHANCE = 5
+
+# Happiness score parameters
+SAFETY_WEIGHT = 5.0
+EFFICIENCY_WEIGHT = 3.0
+COMFORT_WEIGHT = 2.0
+
+# Vehicle behavior settings
+FAULT_DETECTION_DISTANCE = 6
+SAFE_DISTANCE = 2
+MERGE_SAFE_DISTANCE = 2
+ANIMATION_STEPS = 10
+LANE_CHANGE_COOLDOWN = 5
