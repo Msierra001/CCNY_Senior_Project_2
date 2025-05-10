@@ -184,15 +184,27 @@ class Vehicle:
                 # Found a vehicle ahead in target lane
                 other_vehicle = env.grid[check_row][new_col]
                 
+                # Calculate happiness scores
+                my_happiness = self.calculate_happiness(env)
+                other_happiness = other_vehicle.calculate_happiness(env)
+                
                 # If other vehicle is slower than us, we need more distance
                 if other_vehicle.speed < self.speed:
                     needed_distance = max(3, 5 * (self.speed - other_vehicle.speed))
+                    # If we have lower happiness, we get priority and need less distance
+                    if my_happiness < other_happiness:
+                        needed_distance = max(2, needed_distance * 0.7)  # 30% reduction in needed distance
                     if offset < needed_distance:
                         ahead_safe = False
                 else:
                     # If moving similar speed, still need some distance
-                    if offset < 3:
-                        ahead_safe = False
+                    # But if we have lower happiness, we get priority
+                    if my_happiness < other_happiness:
+                        if offset < 2:  # Reduced minimum distance for lower happiness
+                            ahead_safe = False
+                    else:
+                        if offset < 3:
+                            ahead_safe = False
                 break
         
         # Check behind in target lane
@@ -203,9 +215,16 @@ class Vehicle:
                 # Found a vehicle behind in target lane
                 other_vehicle = env.grid[check_row][new_col]
                 
+                # Calculate happiness scores
+                my_happiness = self.calculate_happiness(env)
+                other_happiness = other_vehicle.calculate_happiness(env)
+                
                 # If other vehicle is faster than us, they might hit us
                 if other_vehicle.speed > self.speed:
                     needed_distance = max(2, 4 * (other_vehicle.speed - self.speed))
+                    # If we have lower happiness, we get priority and need less distance
+                    if my_happiness < other_happiness:
+                        needed_distance = max(1, needed_distance * 0.7)  # 30% reduction in needed distance
                     if offset < needed_distance:
                         behind_safe = False
                 break
