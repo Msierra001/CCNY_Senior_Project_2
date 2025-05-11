@@ -1,5 +1,5 @@
 # Grid dimensions and display settings
-ROWS = 100
+ROWS = 300
 COLS = 4
 CELL_SIZE = 40
 FPS = 60

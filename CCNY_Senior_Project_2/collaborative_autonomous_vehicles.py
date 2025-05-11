@@ -128,6 +128,7 @@ class Vehicle:
         self.planned_lane_change = None
         self.last_fault_position = None
         self.lane_change_cooldown = 0
+        self.shared_fault_info = None
 
 
     def detect_faults_ahead(self, env):
@@ -318,6 +319,12 @@ class Vehicle:
         
         # Detect faults ahead
         fault_ahead = self.detect_faults_ahead(env)
+
+        # ---  React to shared fault info ---
+        if not fault_ahead and self.shared_fault_info and not self.is_changing_lane and not self.planned_lane_change:
+            shared_type = self.shared_fault_info.split(": ")[1]
+            simulated_fault = {'type': shared_type, 'distance': 3}
+            self.plan_lane_change(env, simulated_fault)
         
         # React to faults
         if fault_ahead and not self.is_changing_lane and not self.planned_lane_change:
@@ -427,7 +434,12 @@ class Vehicle:
             # Draw fault reaction indicator if active
             if self.reacting_to_fault:
                 # Get color based on fault type
-                color = FAULTS.get(self.reacting_to_fault, (255, 0, 0))  # Default to red
+                if self.reacting_to_fault and self.reacting_to_fault.startswith("info:"):
+                    fault_type = self.reacting_to_fault.split(":")[1]
+                    color = (255, 255, 0)  # yellow for shared info
+                else:
+                    color = FAULTS.get(self.reacting_to_fault, (255, 0, 0))  # red default
+
 
                 # Draw alert icon with pulsing effect
                 pulse = abs(math.sin(pygame.time.get_ticks() / 400)) * 0.5 + 0.5  # Slower pulse
@@ -467,6 +479,20 @@ class Vehicle:
         
         return happiness
     
+    def broadcast_faults(self, env):
+        fault_info = self.detect_faults_ahead(env)
+        if fault_info:
+            for other in env.vehicles:
+                if other != self:
+                    row_diff = other.row - self.row
+                    col_diff = abs(other.col - self.col)
+                    if 0 < row_diff <= 3 and col_diff <= 1:
+                        other.reacting_to_fault = f"info:{fault_info['type']}"
+                        other.reaction_time = 30
+                        env.add_log_message(
+                            f"Ego vehicle {self.id} broadcasted '{fault_info['type']}' to Vehicle {other.id}"
+                        )
+
     def calculate_safety_score(self, env):
         # Distance to nearest obstacle (vehicle or fault)
         min_distance = float('inf')
@@ -827,9 +853,10 @@ def main():
                     history.append(snapshot)
                     env.generate_faults_ahead()
                     ego_vehicle = env.evaluate_ego()
-                    env.update(animation_step=False)
                     if ego_vehicle:
+                        ego_vehicle.broadcast_faults(env)
                         camera_offset = max(0, ego_vehicle.row * CELL_SIZE - HEIGHT // 2)
+                    env.update(animation_step=False)
                     animation_step = 0
                 elif event.key == pygame.K_LEFT and paused and history:
                     env = history.pop()
@@ -841,9 +868,10 @@ def main():
                 history.append(snapshot)
                 env.generate_faults_ahead()
                 ego_vehicle = env.evaluate_ego()
-                env.update(animation_step=False)
                 if ego_vehicle:
+                    ego_vehicle.broadcast_faults(env)
                     camera_offset = max(0, ego_vehicle.row * CELL_SIZE - HEIGHT // 2)
+                env.update(animation_step=False)
 
             env.update(animation_step=True)
             animation_step = (animation_step + 1) % ANIMATION_STEPS
