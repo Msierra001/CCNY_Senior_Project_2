@@ -360,6 +360,7 @@ class Vehicle:
                     if other and other.speed < self.speed - 0.5:
                         if not self.is_changing_lane and not self.planned_lane_change:
                             fault_stub = {'type': 'slow_car', 'distance': offset}
+                            env.add_log_message(f"Vehicle {self.id} plans to merge due to slower vehicle at row {check_row}")
                             self.plan_lane_change(env, fault_stub)
                         break
 
