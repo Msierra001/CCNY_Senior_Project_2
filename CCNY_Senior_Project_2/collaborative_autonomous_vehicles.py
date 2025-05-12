@@ -427,13 +427,6 @@ class Vehicle:
                 screen.blit(outline, (x + CELL_SIZE//2 - 5 + dx, y + CELL_SIZE//2 - 8 + dy))
             screen.blit(id_text, (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2 - 8))
             
-            # Draw vehicle speed indicator (faster = longer line)
-            speed_length = int(self.speed * 10)
-            pygame.draw.line(screen, (0, 255, 0), 
-                            (x + CELL_SIZE//2, y + CELL_SIZE - 5),
-                            (x + CELL_SIZE//2, y + CELL_SIZE - 5 - speed_length), 
-                            3)
-            
             # Draw fault reaction indicator if active
             if self.reacting_to_fault:
                 # Get color based on fault type
@@ -442,7 +435,6 @@ class Vehicle:
                     color = (255, 255, 0)  # yellow for shared info
                 else:
                     color = FAULTS.get(self.reacting_to_fault, (255, 0, 0))  # red default
-
 
                 # Draw alert icon with pulsing effect
                 pulse = abs(math.sin(pygame.time.get_ticks() / 400)) * 0.5 + 0.5  # Slower pulse
