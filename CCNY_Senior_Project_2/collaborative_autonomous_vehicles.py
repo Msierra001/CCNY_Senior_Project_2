@@ -419,10 +419,13 @@ class Vehicle:
             img = ego_car_img if ego else car_img
             screen.blit(img, (x + 5, y + 5))
             
-            # Draw ID text
-            font = pygame.font.SysFont(None, 20)
-            id_text = font.render(str(self.id), True, (255, 255, 255))
-            screen.blit(id_text, (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2 - 5))
+            # Draw ID text with improved visibility
+            font = pygame.font.SysFont(None, 24)
+            id_text = font.render(str(self.id), True, (255, 255, 255)) 
+            outline = font.render(str(self.id), True, (0, 0, 0))
+            for dx, dy in [(-1,-1), (-1,1), (1,-1), (1,1)]:
+                screen.blit(outline, (x + CELL_SIZE//2 - 5 + dx, y + CELL_SIZE//2 - 8 + dy))
+            screen.blit(id_text, (x + CELL_SIZE//2 - 5, y + CELL_SIZE//2 - 8))
             
             # Draw vehicle speed indicator (faster = longer line)
             speed_length = int(self.speed * 10)
